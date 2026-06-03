@@ -1,0 +1,45 @@
+name: Fraud API CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Linting Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+
+      - name: Run Black Formatter Check
+        run: black --check src/ serve.py train.py
+
+      - name: Lint with Flake8
+        run: flake8 src/ serve.py train.py --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  docker-build-test:
+    needs: code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          docker build -t xente-fraud-api:latest .
+          
+      - name: Verify Docker Image Exists
+        run: |
+          docker images | grep xente-fraud-api

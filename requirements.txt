@@ -1,0 +1,9 @@
+pandas
+numpy
+scikit-learn
+xgboost#==2.0.3  # Pinned to avoid the SHAP bug we encountered
+mlflow
+fastapi
+uvicorn
+pydantic
+pytest

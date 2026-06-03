@@ -1,0 +1,23 @@
+# Environments
+.venv/
+env/
+venv/
+
+# Data (Crucial: Do not push the 500MB+ dataset to GitHub)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Python / Jupyter cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# IDE and OS
+.vscode/
+.DS_Store
+
+# Secrets and MLflow
+.env
+mlruns/
