@@ -39,7 +39,10 @@ class XenteTransaction(BaseModel):
             }
         }
 
-app = FastAPI(title="Xente Real-Time Fraud API", version="1.0")
+app = FastAPI(
+    title="Xente Real-Time Fraud API",
+    version="1.0"
+)
 
 # Sample transaction for testing
 SAMPLE_TRANSACTION = {
@@ -55,8 +58,6 @@ SAMPLE_TRANSACTION = {
     'IsCredit': 1
 }
 
-# MODEL_URI = os.getenv("MODEL_URI", "runs:/40328695a4cb43c4a82d1b4b777e55ee/fraud_pipeline")
-
 MODEL_URI = "runs:/b1162ca437d6405ba89f4b463ba536e2/fraud_pipeline"
 mlflow.set_tracking_uri("sqlite:///mlflow.db")
 model_pipeline = None
@@ -64,7 +65,7 @@ model_pipeline = None
 @app.on_event("startup")
 def load_model():
     global model_pipeline
-    model_pipeline = mlflow.sklearn.load_model(MODEL_URI) # pyright: ignore
+    model_pipeline = mlflow.sklearn.load_model(MODEL_URI)  # pyright: ignore
     if model_pipeline:
         print("Model loaded successfully!")
 
@@ -72,7 +73,10 @@ def load_model():
 def test_prediction():
     """Test endpoint using sample transaction"""
     if not model_pipeline:
-        raise HTTPException(status_code=500, detail="Model not loaded.")
+        raise HTTPException(
+            status_code=500,
+            detail="Model not loaded."
+        )
     
     transaction = XenteTransaction(**SAMPLE_TRANSACTION)
     df_input = pd.DataFrame([transaction.dict()])
@@ -92,12 +96,16 @@ def test_prediction():
 @app.post("/predict")
 def predict_fraud(transaction: XenteTransaction):
     if not model_pipeline:
-        raise HTTPException(status_code=500, detail="Model not loaded.")
+        raise HTTPException(
+            status_code=500,
+            detail="Model not loaded."
+        )
         
     df_input = pd.DataFrame([transaction.dict()])
     
-    # Notice: Our custom pipeline automatically fetches the customer's 
-    # historical avg amount and applies it to this new payload seamlessly!
+    # Notice: Our custom pipeline automatically fetches the
+    # customer's historical avg amount and applies it to this
+    # new payload seamlessly!
     probability = model_pipeline.predict_proba(df_input)[0][1]
     
     return {
