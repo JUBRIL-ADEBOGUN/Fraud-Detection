@@ -36,7 +36,7 @@ def train_and_log():
     with mlflow.start_run(run_name="XGB_Xente_Candidate") as run:
         # Pre-fit preprocessor to handle eval_set transformation
         preprocessor = XentePreprocessor()
-        X_train_transformed = preprocessor.fit_transform(X_train)
+        preprocessor.fit(X_train)
         X_test_transformed = preprocessor.transform(X_test)
         
         # Create pipeline and fit with transformed eval_set
