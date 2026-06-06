@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException # pyright: ignore
 from pydantic import BaseModel # pyright: ignore
 import pandas as pd # pyright: ignore
 import mlflow.sklearn # pyright: ignore
-import os, numpy as np # pyright: ignore
+import numpy as np # pyright: ignore
 import sys
 from pathlib import Path
 sys.path.insert(0, './src')
