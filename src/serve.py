@@ -4,8 +4,11 @@ import pandas as pd # pyright: ignore
 import mlflow.sklearn # pyright: ignore
 import numpy as np # pyright: ignore
 import sys
+from pathlib import Path
 sys.path.insert(0, './src')
-from features import XentePreprocessor  # noqa: F401 - needed for model unpickling
+from features import (
+    XentePreprocessor
+)  # noqa: F401 - needed for model unpickling
 
 # Set MLflow tracking URI at module level
 # mlflow.set_tracking_uri(Path.cwd() / "mlruns")
