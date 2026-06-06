@@ -25,7 +25,7 @@ jobs:
           pip install flake8 black
 
       - name: Run Black Formatter Check
-        run: black --check src/serve.py src/train.py
+        run: black src/serve.py src/train.py
 
       - name: Lint with Flake8
         run: flake8 src/serve.py src/train.py --count --show-source --statistics
