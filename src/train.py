@@ -3,7 +3,12 @@ import mlflow.sklearn # type: ignore
 from mlflow.models import infer_signature # type: ignore
 import xgboost as xgb # type: ignore
 from sklearn.pipeline import Pipeline #pyright: ignore
-from sklearn.metrics import average_precision_score, precision_recall_curve, precision_score, recall_score #pyright: ignore
+from sklearn.metrics import (
+    average_precision_score,
+    precision_recall_curve,
+    precision_score,
+    recall_score
+) #pyright: ignore
 from features import XentePreprocessor, load_and_split_xente
 from sklearn.metrics import ConfusionMatrixDisplay # pyright: ignore
 import matplotlib.pyplot as plt # pyright: ignore
@@ -46,9 +51,12 @@ def train_and_log():
         ])
         
         print("Training pipeline...")
-        pipeline.fit(X_train, y_train, 
-                     classifier__eval_set=[(X_test_transformed, y_test)],
-                     classifier__verbose=False)
+        pipeline.fit(
+            X_train,
+            y_train,
+            classifier__eval_set=[(X_test_transformed, y_test)],
+            classifier__verbose=False
+        )
         
         print("Evaluating...")
         preds = pipeline.predict(X_test)
@@ -57,7 +65,11 @@ def train_and_log():
         auprc = average_precision_score(y_test, preds_proba)
 
         # plot confusion matrix and log it as an artifact
-        disp = ConfusionMatrixDisplay.from_predictions(y_test, preds, normalize='true')
+        ConfusionMatrixDisplay.from_predictions(
+            y_test,
+            preds,
+            normalize='true'
+        )
         plt.title("Normalized Confusion Matrix")
         plt.savefig("./reports/confusion_matrix.png")
 
@@ -72,13 +84,22 @@ def train_and_log():
         predictions = pipeline.predict(X_test)
         signature = infer_signature(X_test, predictions)
 
-        # 2. Extract a real input example slice (e.g., first 3 rows) to bundle as an artifact
+        # 2. Extract a real input example slice (e.g., first 3 rows)
+        # to bundle as an artifact
         input_example = X_test.iloc[0:3]
 
         # Plot Precision-Recall Curve
-        precision_vals, recall_vals, _ = precision_recall_curve(y_test, preds_proba)
+        precision_vals, recall_vals, _ = precision_recall_curve(
+            y_test,
+            preds_proba
+        )
         plt.figure(figsize=(8, 5))
-        plt.plot(recall_vals, precision_vals, marker='.', label=f'XGBoost (AUPRC = {auprc:.3f})')
+        plt.plot(
+            recall_vals,
+            precision_vals,
+            marker='.',
+            label=f'XGBoost (AUPRC = {auprc:.3f})'
+        )
         plt.xlabel('Recall')
         plt.ylabel('Precision')
         plt.title('Precision-Recall Curve')
@@ -87,8 +108,12 @@ def train_and_log():
         mlflow.log_artifact("./reports/precision_recall_curve.png")
 
         
-        mlflow.sklearn.log_model(pipeline, name="fraud_pipeline",  # pyright: ignore
-                        signature=signature, input_example=input_example)
+        mlflow.sklearn.log_model(
+            pipeline,
+            name="fraud_pipeline",  # pyright: ignore
+            signature=signature,
+            input_example=input_example
+        )
         print(f"Model saved! Run ID: {run.info.run_id}")
 
 if __name__ == "__main__":
