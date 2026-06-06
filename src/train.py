@@ -5,9 +5,7 @@ import xgboost as xgb # type: ignore
 from sklearn.pipeline import Pipeline #pyright: ignore
 from sklearn.metrics import (
     average_precision_score,
-    precision_recall_curve,
-    precision_score,
-    recall_score
+    precision_recall_curve
 ) #pyright: ignore
 from features import XentePreprocessor, load_and_split_xente
 from sklearn.metrics import ConfusionMatrixDisplay # pyright: ignore
@@ -46,7 +44,10 @@ def train_and_log():
         
         # Create pipeline and fit with transformed eval_set
         pipeline = Pipeline([
-            ('preprocessor', XentePreprocessor()),  # Will be fit on X_train
+            (
+                'preprocessor',
+                XentePreprocessor()
+            ),  # Will be fit on X_train
             ('classifier', xgb.XGBClassifier(**params))
         ])
         
@@ -68,7 +69,7 @@ def train_and_log():
         ConfusionMatrixDisplay.from_predictions(
             y_test,
             preds,
-            normalize='true'
+            normalize="true"
         )
         plt.title("Normalized Confusion Matrix")
         plt.savefig("./reports/confusion_matrix.png")
