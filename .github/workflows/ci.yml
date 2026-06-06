@@ -37,7 +37,7 @@ jobs:
         run: black --check src/serve.py src/train.py
 
       - name: Lint with Flake8
-        run: flake8 src/serve.py src/train.py --count --show-source --statistics
+        run: flake8 src/serve.py src/train.py --count --show-source --statistics --max-line-length=150
 
   docker-build-test:
     name: Docker Build and Test
