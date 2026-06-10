@@ -1,3 +1,4 @@
+import json
 import mlflow  # type: ignore #pylint [ignore]
 import mlflow.sklearn  # type: ignore
 from mlflow.models import infer_signature  # type: ignore
@@ -13,6 +14,13 @@ import matplotlib.pyplot as plt  # pyright: ignore
 
 DATA_PATH = "./data/raw/train.csv"
 EXPERIMENT_NAME = "Xente_Fraud_Detection"
+PARAMS_PATH = "./notebooks/best_params.json"
+
+
+def load_params(params_path):
+    """Load parameters from JSON file."""
+    with open(params_path, "r") as f:
+        return json.load(f)
 
 
 def train_and_log():
@@ -24,17 +32,12 @@ def train_and_log():
     X_train, X_test, y_train, y_test = load_and_split_xente(DATA_PATH)
     scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
 
-    params = {
-        "objective": "binary:logistic",
-        "eval_metric": "aucpr",
-        "scale_pos_weight": scale_pos_weight,
-        "learning_rate": 0.05,
-        "max_depth": 5,
-        "n_estimators": 1200,
-        "random_state": 42,
-        "enable_categorical": True,
-        # 'early_stopping_rounds': 20
-    }
+    # Load parameters from notebook
+    print(f"Loading parameters from {PARAMS_PATH}...")
+    params = load_params(PARAMS_PATH)
+    
+    # Override scale_pos_weight with current data if needed
+    params["scale_pos_weight"] = scale_pos_weight
 
     with mlflow.start_run(run_name="XGB_Xente_Candidate") as run:
         # Pre-fit preprocessor to handle eval_set transformation
