@@ -35,7 +35,7 @@ def train_and_log():
     # Load parameters from notebook
     print(f"Loading parameters from {PARAMS_PATH}...")
     params = load_params(PARAMS_PATH)
-    
+
     # Override scale_pos_weight with current data if needed
     params["scale_pos_weight"] = scale_pos_weight
 

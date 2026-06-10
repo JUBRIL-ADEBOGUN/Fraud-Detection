@@ -69,8 +69,10 @@ class XentePreprocessor(BaseEstimator, TransformerMixin):
         # For production, we should ideally use OneHotEncoder, but for MVP we use get_dummies.
         # To align columns between train/test, we ensure expected columns exist.
         categorical_cols = [
-            "ProviderId", "ProductId",
-            "ProductCategory", "ChannelId",  # 'Interactions'
+            "ProviderId",
+            "ProductId",
+            "ProductCategory",
+            "ChannelId",  # 'Interactions'
         ]
 
         # 5. Drop Useless Columns
