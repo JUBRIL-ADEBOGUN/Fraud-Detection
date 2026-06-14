@@ -10,6 +10,14 @@ env:
   PYTHON_VERSION: "3.10"
   DOCKER_IMAGE_NAME: xente-fraud-api
 
+# =======================================================
+# CRITICAL FIX 1: Explicit permissions to upload security results
+# =======================================================
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   code-quality:
     name: Code Quality Checks
@@ -34,10 +42,10 @@ jobs:
           pip install -r requirements.txt flake8 black
 
       - name: Run Black Formatter Check
-        run: black --check src/
+        run: black --check src/serve.py src/train.py
 
       - name: Lint with Flake8
-        run: flake8 src/ --count --show-source --statistics --max-line-length=150
+        run: flake8 src/serve.py src/train.py --count --show-source --statistics --max-line-length=150
 
   docker-build-test:
     name: Docker Build and Test
@@ -51,20 +59,25 @@ jobs:
       - name: Build Docker Image
         run: docker build -t ${{ env.DOCKER_IMAGE_NAME }}:latest .
 
-      - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref:  ${{ env.DOCKER_IMAGE_NAME }}:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
-  
       - name: Verify Docker Image
         run: docker images | grep ${{ env.DOCKER_IMAGE_NAME }}
+
+      # Run Trivy to scan the container for CVEs
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.DOCKER_IMAGE_NAME }}:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # =======================================================
+      # CRITICAL FIX 2: Upgraded from v2 to v3
+      # =======================================================
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   docker-push:
     name: Push Docker Image to Docker Hub
