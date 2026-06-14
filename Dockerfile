@@ -3,18 +3,16 @@
 # ==========================================
 FROM python:3.12-slim AS builder
 
-# Install build dependencies (these will NOT be in the final image)
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /wheels
-
-# Copy requirements file
+# Keep requirements in a separate /build folder so they don't mix with wheels
+WORKDIR /build
 COPY requirements.txt .
 
-# Upgrade pip and install 'wheel' in the builder stage only
-# Then, compile all dependencies into binary .whl files
+# Compile all dependencies into binary .whl files and save them to /wheels
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r requirements.txt
 
@@ -23,15 +21,12 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # ==========================================
 FROM python:3.12-slim
 
-# Prevent Python from writing .pyc files and buffer stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# 1. Update OS packages to patch base Debian CVEs
-# 2. Install ONLY libgomp1 (Required for XGBoost inference)
-# Notice: No build-essential here!
+# Update OS packages and install libgomp1 (Needed for XGBoost)
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     libgomp1 \
@@ -40,12 +35,13 @@ RUN apt-get update && apt-get upgrade -y && \
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser
 
-# Copy the compiled wheels from Stage 1
+# Copy ONLY the compiled wheels from Stage 1
 COPY --from=builder /wheels /wheels
 
-# Install the pre-compiled packages (No compilers or 'wheel' package needed!)
-RUN pip install --no-cache-dir --upgrade pip setuptools && \
-    pip install --no-cache-dir /wheels/* && \
+# Install the pre-compiled packages targeting ONLY .whl files
+# Added --root-user-action=ignore to suppress the annoying pip root warning
+RUN pip install --no-cache-dir --upgrade pip setuptools --root-user-action=ignore && \
+    pip install --no-cache-dir /wheels/*.whl --root-user-action=ignore && \
     rm -rf /wheels
 
 # Copy application code and set ownership
