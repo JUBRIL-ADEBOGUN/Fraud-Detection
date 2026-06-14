@@ -117,13 +117,15 @@ def train_and_log():
         # Register model in MLflow Model Registry
         model_uri = f"runs:/{run.info.run_id}/fraud_pipeline"
         registered_model = mlflow.register_model(model_uri, "fraud-detection-model")
-        print(f"Model registered: {registered_model.name} (Version: {registered_model.version})")
+        print(
+            f"Model registered: {registered_model.name} (Version: {registered_model.version})"
+        )
         # Transition to Production stage
         client = mlflow.tracking.MlflowClient()  # pyright: ignore
         client.transition_model_version_stage(
             name="fraud-detection-model",
             version=registered_model.version,
-            stage="Production"
+            stage="Production",
         )
         print("Model transitioned to Production stage!")
 

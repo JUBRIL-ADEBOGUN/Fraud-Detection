@@ -69,7 +69,7 @@ class XentePreprocessor(BaseEstimator, TransformerMixin):
             "ProductId",
             "ProductCategory",
             "ChannelId",
-            ]
+        ]
 
         # 5. Drop Useless Columns
         cols_to_drop = [
