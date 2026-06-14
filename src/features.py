@@ -60,19 +60,15 @@ class XentePreprocessor(BaseEstimator, TransformerMixin):
             X_tf["Value"] = X_tf["Amount"].abs()
 
         X_tf["IsCredit"] = np.where(X_tf["Amount"] < 0, 1, 0).astype(int)
-        # # interactions between providerId, ProductId, productCategory, and channelId
-        # X_tf['Interactions'] = X_tf['ProviderId'].astype(str) + '_' + \
-        #                                         X_tf['ProductId'].astype(str) +'_'+\
-        #                                         X_tf['ProductCategory'].astype(str) + '_' + \
-        #                                         X_tf['ChannelId'].astype(str)
-        # 4. Categorical Encoding
+
+       # 4. Categorical Encoding
         # For production, we should ideally use OneHotEncoder, but for MVP we use get_dummies.
         # To align columns between train/test, we ensure expected columns exist.
         categorical_cols = [
             "ProviderId",
             "ProductId",
             "ProductCategory",
-            "ChannelId",  # 'Interactions'
+            "ChannelId",  
         ]
 
         # 5. Drop Useless Columns

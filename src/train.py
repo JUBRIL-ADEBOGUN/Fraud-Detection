@@ -35,29 +35,36 @@ def train_and_log():
     # Load parameters from notebook
     print(f"Loading parameters from {PARAMS_PATH}...")
     params = load_params(PARAMS_PATH)
-
+    
     # Override scale_pos_weight with current data if needed
     params["scale_pos_weight"] = scale_pos_weight
-
+    
+    # Extract fit parameters that shouldn't go into __init__
+    # early_stopping_rounds = params.pop("early_stopping_rounds", 20)
+    # eval_metric = params.pop("eval_metric", "aucpr")
+    
     with mlflow.start_run(run_name="XGB_Xente_Candidate") as run:
-        # Pre-fit preprocessor to handle eval_set transformation
-        preprocessor = XentePreprocessor()
-        preprocessor.fit(X_train)
-        X_test_transformed = preprocessor.transform(X_test)
-
-        # Create pipeline and fit with transformed eval_set
+        # Create pipeline with preprocessor and classifier
+        xgb_model = xgb.XGBClassifier(**params)
         pipeline = Pipeline(
             [
-                ("preprocessor", XentePreprocessor()),  # Will be fit on X_train
-                ("classifier", xgb.XGBClassifier(**params)),
+                ("preprocessor", XentePreprocessor()),
+                ("classifier", xgb_model),
             ]
         )
 
         print("Training pipeline...")
+        # Transform X_test using the pipeline preprocessor (fit on X_train)
+        preprocessor = pipeline.named_steps["preprocessor"].fit(X_train)
+        X_test_transformed = preprocessor.transform(X_test)
+        
+        # Fit pipeline with early stopping enabled
         pipeline.fit(
             X_train,
             y_train,
             classifier__eval_set=[(X_test_transformed, y_test)],
+            # classifier__eval_metric=eval_metric,
+            # classifier__early_stopping_rounds=early_stopping_rounds,
             classifier__verbose=False,
         )
 
@@ -76,7 +83,10 @@ def train_and_log():
         # mlflow.log_artifact("./reports/shap_values.png")
 
         print(f"AUPRC: {auprc:.4f}")
-        mlflow.log_params(params)
+        # Log model parameters including fit parameters
+        log_params = params.copy()
+        
+        mlflow.log_params(log_params)
         mlflow.log_metric("auprc", auprc)  # pyright: ignore
 
         # 1. Create a Model Signature (defines structure and data types)
@@ -103,13 +113,27 @@ def train_and_log():
         plt.savefig("./reports/precision_recall_curve.png")
         mlflow.log_artifact("./reports/precision_recall_curve.png")
 
-        mlflow.sklearn.log_model(
+        mlflow.sklearn.log_model( # pyright: ignore
             pipeline,
             name="fraud_pipeline",  # pyright: ignore
             signature=signature,
             input_example=input_example,
         )
         print(f"Model saved! Run ID: {run.info.run_id}")
+        
+        # Register model in MLflow Model Registry
+        model_uri = f"runs:/{run.info.run_id}/fraud_pipeline"
+        registered_model = mlflow.register_model(model_uri, "fraud-detection-model")
+        print(f"Model registered: {registered_model.name} (Version: {registered_model.version})")
+        
+        # Transition to Production stage
+        client = mlflow.tracking.MlflowClient() # pyright: ignore
+        client.transition_model_version_stage(
+            name="fraud-detection-model",
+            version=registered_model.version,
+            stage="Production"
+        )
+        print(f"Model transitioned to Production stage!")
 
 
 if __name__ == "__main__":

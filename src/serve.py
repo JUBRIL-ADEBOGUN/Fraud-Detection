@@ -4,11 +4,12 @@ import pandas as pd  # pyright: ignore
 import mlflow.sklearn  # pyright: ignore
 import numpy as np  # pyright: ignore
 import sys
+import os
 
-from features import XentePreprocessor  # noqa: F401 - needed for model unpickling
+from src.features import XentePreprocessor  # noqa: F401 - needed for model unpickling
 
 # Set MLflow tracking URI at module level
-# mlflow.set_tracking_uri(Path.cwd() / "mlruns")
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
 sys.path.insert(0, "./src")
 
 
@@ -57,17 +58,22 @@ SAMPLE_TRANSACTION = {
     "IsCredit": 1,
 }
 
-MODEL_URI = "runs:/b1162ca437d6405ba89f4b463ba536e2/fraud_pipeline"
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
 model_pipeline = None
 
 
 @app.on_event("startup")
 def load_model():
     global model_pipeline
-    model_pipeline = mlflow.sklearn.load_model(MODEL_URI)  # pyright: ignore
-    if model_pipeline:
-        print("Model loaded successfully!")
+    try:
+        # Load production model from MLflow Model Registry
+        # Automatically gets the latest model in Production stage
+        model_uri = "models:/fraud-detection-model/Production"
+        model_pipeline = mlflow.sklearn.load_model(model_uri)  # pyright: ignore
+        print(f"✓ Model loaded successfully from: {model_uri}")
+    except Exception as e:
+        print(f"✗ Failed to load model: {e}")
+        print("Ensure the model is registered and transitioned to Production stage.")
+        raise
 
 
 @app.get("/test")
@@ -87,7 +93,7 @@ def test_prediction():
             "transaction_id": transaction.TransactionId,
             "product_category": transaction.ProductCategory,
             "fraudResult": bool(probability >= 0.5),
-            "fraud_probability": float(np.round(probability, 3)),
+            "fraud_probability": float(np.round(probability, 6)),
         },
     }
 
@@ -108,6 +114,6 @@ def predict_fraud(transaction: XenteTransaction):
         "transaction_id": transaction.TransactionId,
         "Product_Category": transaction.ProductCategory,
         "fraudResult": bool(probability >= 0.5),
-        # probability in 3 decimal places
-        "fraud_probability": float(np.round(probability, 3)),
+        # probability in 6 decimal places
+        "fraud_probability": float(np.round(probability, 6)),
     }

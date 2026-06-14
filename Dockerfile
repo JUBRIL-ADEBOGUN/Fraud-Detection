@@ -1,33 +1,60 @@
-# Use an official lightweight Python image
-FROM python:3.10-slim
+# ==========================================
+# STAGE 1: Builder (Compiles dependencies)
+# ==========================================
+FROM python:3.12-slim AS builder
 
-# Set environment variables to prevent Python from writing .pyc files 
-# and to ensure console output is not buffered
+# Install build dependencies (these will NOT be in the final image)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /wheels
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Upgrade pip and install 'wheel' in the builder stage only
+# Then, compile all dependencies into binary .whl files
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r requirements.txt
+
+# ==========================================
+# STAGE 2: Final Runtime Image
+# ==========================================
+FROM python:3.12-slim
+
+# Prevent Python from writing .pyc files and buffer stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies (required for some ML libraries like XGBoost)
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# 1. Update OS packages to patch base Debian CVEs
+# 2. Install ONLY libgomp1 (Required for XGBoost inference)
+# Notice: No build-essential here!
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements first to leverage Docker cache
-COPY requirements.txt /app/
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy the compiled wheels from Stage 1
+COPY --from=builder /wheels /wheels
 
-# Copy the rest of the application
-COPY . /app/
+# Install the pre-compiled packages (No compilers or 'wheel' package needed!)
+RUN pip install --no-cache-dir --upgrade pip setuptools && \
+    pip install --no-cache-dir /wheels/* && \
+    rm -rf /wheels
 
-# Expose the port the app runs on
+# Copy application code and set ownership
+COPY --chown=appuser:appuser . /app/
+
+# Switch to non-root user
+USER appuser
+
 EXPOSE 8000
 
-# Command to run the API using Uvicorn
-# Note: Adjust the import path if your serve.py is inside src/ (e.g., src.serve:app)
+# Start FastAPI
 CMD ["uvicorn", "src.serve:app", "--host", "0.0.0.0", "--port", "8000"]
