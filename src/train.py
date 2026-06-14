@@ -85,7 +85,7 @@ def train_and_log():
         print(f"AUPRC: {auprc:.4f}")
         # Log model parameters including fit parameters
         log_params = params.copy()
-        
+
         mlflow.log_params(log_params)
         mlflow.log_metric("auprc", auprc)  # pyright: ignore
 
@@ -133,7 +133,7 @@ def train_and_log():
             version=registered_model.version,
             stage="Production"
         )
-        print(f"Model transitioned to Production stage!")
+        print("Model transitioned to Production stage!")
 
 
 if __name__ == "__main__":
