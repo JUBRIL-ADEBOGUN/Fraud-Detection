@@ -34,8 +34,8 @@ Instead, a custom `XentePreprocessor` was built to extract **Velocity and Freque
 Optimized strictly for the **Area Under the Precision-Recall Curve (AUPRC)** to handle extreme class imbalance (fraud = <0.2% of data).
 
 *   **Primary Metric (AUPRC):** `0.778`
-*   **Recall:** Captures `92%` of all fraudulent transactions.
-*   **False Positive Rate:** `0.094%` (Falsely flags less than one-tenth of one percent of legitimate transactions, ensuring extremely low customer friction/churn).
+*   **Recall:** Captures `97%` of all fraudulent transactions.
+*   **False Positive Rate:** `0.026%` (Falsely flags less than one-tenth of one percent of legitimate transactions, ensuring extremely low customer friction/churn).
 
 *(Precision-Recall curves, Normalized Confusion Matrices, and SHAP Summary plots are automatically tracked and saved as artifacts in the MLflow tracking server).*
 
